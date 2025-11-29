@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>2D Platformer Game</title>
+<style>
+    body {
+        margin: 0;
+        background: #222;
+        overflow: hidden;
+        font-family: Arial;
+    }
+
+    canvas {
+        background: linear-gradient(#87CEFA, #4DA0B0);
+        display: block;
+        margin: 0 auto;
+    }
+
+    #hud {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 26px;
+        color: white;
+        text-shadow: 2px 2px 3px black;
+    }
+</style>
+</head>
+<body>
+
+<div id="hud">⭐ 0</div>
+<canvas id="game" width="900" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// PLAYER
+let player = {
+    x: 100, y: 350,
+    w: 40, h: 50,
+    dx: 0, dy: 0,
+    speed: 4,
+    jumpPower: -12,
+    gravity: 0.6,
+    onGround: false
+};
+
+// PLATFORMS
+let platforms = [
+    { x: 0, y: 430, w: 900, h: 40 },
+    { x: 200, y: 330, w: 200, h: 20 },
+    { x: 500, y: 280, w: 150, h: 20 },
+    { x: 700, y: 350, w: 150, h: 20 }
+];
+
+// ENEMIES
+let enemies = [
+    { x: 350, y: 390, w: 40, h: 40, dir: 1 },
+    { x: 580, y: 240, w: 40, h: 40, dir: -1 }
+];
+
+// STARS
+let stars = [
+    { x: 230, y: 290 }, { x: 530, y: 240 }, { x: 750, y: 300 }
+];
+
+let score = 0;
+const scoreHud = document.getElementById("hud");
+
+// COLLISION FUNCTION
+function isColliding(a, b) {
+    return a.x < b.x + b.w &&
+           a.x + a.w > b.x &&
+           a.y < b.y + b.h &&
+           a.y + a.h > b.y;
+}
+
+// GAME LOOP
+function update() {
+    // Horizontal move
+    if (keys["ArrowRight"]) player.dx = player.speed;
+    else if (keys["ArrowLeft"]) player.dx = -player.speed;
+    else player.dx = 0;
+
+    // Jump
+    if (keys[" "] && player.onGround) {
+        player.dy = player.jumpPower;
+        player.onGround = false;
+    }
+
+    // Gravity
+    player.dy += player.gravity;
+
+    // Apply movement
+    player.x += player.dx;
+    player.y += player.dy;
+
+    // Platforms collision
+    player.onGround = false;
+    platforms.forEach(p => {
+        if (isColliding(player, p)) {
+            if (player.dy > 0) {
+                player.y = p.y - player.h;
+                player.dy = 0;
+                player.onGround = true;
+            }
+        }
+    });
+
+    // Enemies move
+    enemies.forEach(e => {
+        e.x += e.dir * 2;
+        if (e.x < 300 || e.x > 800) e.dir *= -1;
+
+        // Check collision with player
+        if (isColliding(player, e)) {
+            alert("💀 O‘YIN TUGADI! Ball: " + score);
+            location.reload();
+        }
+    });
+
+    // Collect stars
+    stars = stars.filter(s => {
+        if (player.x < s.x + 20 &&
+            player.x + player.w > s.x &&
+            player.y < s.y + 20 &&
+            player.y + player.h > s.y) {
+            score++;
+            scoreHud.textContent = "⭐ " + score;
+            return false;
+        }
+        return true;
+    });
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+// DRAW EVERYTHING
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Player
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    // Platforms
+    ctx.fillStyle = "#333";
+    platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+    // Enemies
+    ctx.fillStyle = "red";
+    enemies.forEach(e => ctx.fillRect(e.x, e.y, e.w, e.h));
+
+    // Stars
+    ctx.fillStyle = "gold";
+    stars.forEach(s => ctx.fillRect(s.x, s.y, 20, 20));
+}
+
+update();
+</script>
+
+</body>
+</html>
